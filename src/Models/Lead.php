@@ -27,21 +27,33 @@ class Lead extends AbstractModel
     /**
      * @var array Список доступный полей для модели (исключая кастомные поля)
      */
+
+    const FIELDS_MAPPING=[
+        'created_at'=>'date_create',
+        'updated_at'=>'last_modified',
+        'sale'=>'price',
+        'company_id'=>'linked_company_id',
+        'created_by'=>'created_user_id',
+    ];
+
     protected $fields = [
         'name',
-        'date_create',
-        'last_modified',
+        'created_at',
+        'updated_at',
         'status_id',
         'pipeline_id',
-        'price',
+        'sale',
         'responsible_user_id',
-        'created_user_id',
+        'created_by',
         'request_id',
-        'linked_company_id',
+        'company_id',
         'tags',
-        'visitor_uid',
-        'notes',
-        'modified_user_id',
+        // 'visitor_uid',
+        // 'notes',
+        // 'modified_user_id',
+        'contacts_id',
+        'catalog_elements_id',
+        'is_deleted'
     ];
 
     /**
@@ -57,7 +69,15 @@ class Lead extends AbstractModel
      */
     public function apiList($parameters, $modified = null)
     {
-        $response = $this->getRequest('/private/api/v2/json/leads/list', $parameters, $modified);
+        $response = $this->getRequest('/api/v2/leads', $parameters, $modified);
+
+        foreach ($response as $lead) {
+            foreach (FIELDS_MAPPING as $key => $value) {
+                if ($lead[$key]){
+                    $lead[$val]=$lead[$key];
+                }
+            }
+        }
 
         return isset($response['leads']) ? $response['leads'] : [];
     }
@@ -87,7 +107,7 @@ class Lead extends AbstractModel
             $parameters['leads']['add'][] = $lead->getValues();
         }
 
-        $response = $this->postRequest('/private/api/v2/json/leads/set', $parameters);
+        $response = $this->postRequest('/api/v2/leads', $parameters);
 
         if (isset($response['leads']['add'])) {
             $result = array_map(function($item) {
@@ -127,7 +147,7 @@ class Lead extends AbstractModel
 
         $parameters['leads']['update'][] = $lead;
 
-        $response = $this->postRequest('/private/api/v2/json/leads/set', $parameters);
+        $response = $this->postRequest('/api/v2/leads', $parameters);
 
         return empty($response['leads']['update']['errors']);
     }
