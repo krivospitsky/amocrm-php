@@ -38,22 +38,19 @@ class Lead extends AbstractModel
 
     protected $fields = [
         'name',
-        'created_at',
-        'updated_at',
+        'date_create',
+        'last_modified',
         'status_id',
         'pipeline_id',
-        'sale',
+        'price',
         'responsible_user_id',
-        'created_by',
+        'created_user_id',
         'request_id',
-        'company_id',
+        'linked_company_id',
         'tags',
-        // 'visitor_uid',
-        // 'notes',
-        // 'modified_user_id',
-        'contacts_id',
-        'catalog_elements_id',
-        'is_deleted'
+        'visitor_uid',
+        'notes',
+        'modified_user_id',
     ];
 
     /**
@@ -67,19 +64,20 @@ class Lead extends AbstractModel
      * @param null|string $modified Дополнительная фильтрация по (изменено с)
      * @return array Ответ amoCRM API
      */
-    public function apiList($parameters, $modified = null)
+    public function apiV2List($parameters, $modified = null)
     {
         $response = $this->getRequest('/api/v2/leads', $parameters, $modified);
-
+        $result=[];
         foreach ($response as $lead) {
-            foreach (FIELDS_MAPPING as $key => $value) {
+            foreach (Lead::FIELDS_MAPPING as $key => $value) {
                 if ($lead[$key]){
-                    $lead[$val]=$lead[$key];
+                    $lead[$value]=$lead[$key];
                 }
             }
+            array_push($result, $lead);
         }
 
-        return isset($response['leads']) ? $response['leads'] : [];
+        return $result;
     }
 
     /**
@@ -91,28 +89,26 @@ class Lead extends AbstractModel
      * @param array $leads Массив сделок для пакетного добавления
      * @return int|array Уникальный идентификатор сделки или массив при пакетном добавлении
      */
-    public function apiAdd($leads = [])
+    public function apiV2Add($leads = [])
     {
         if (empty($leads)) {
             $leads = [$this];
         }
 
         $parameters = [
-            'leads' => [
-                'add' => [],
-            ],
+            'add' => [],
         ];
 
         foreach ($leads AS $lead) {
-            $parameters['leads']['add'][] = $lead->getValues();
+            $parameters['add'][] = $lead->getValues();
         }
 
         $response = $this->postRequest('/api/v2/leads', $parameters);
 
-        if (isset($response['leads']['add'])) {
+        if (isset($response)) {
             $result = array_map(function($item) {
                 return $item['id'];
-            }, $response['leads']['add']);
+            }, $response);
         } else {
             return [];
         }
@@ -131,24 +127,97 @@ class Lead extends AbstractModel
      * @return bool Флаг успешности выполнения запроса
      * @throws \AmoCRM\Exception
      */
-    public function apiUpdate($id, $modified = 'now')
+    public function apiV2Update($id, $modified = 'now')
     {
         $this->checkId($id);
 
+        $parameters = [
+            'update' => [],
+        ];
+
+        $lead = $this->getValues();
+        $lead['id'] = $id;
+        $lead['updated_at'] = strtotime($modified);
+
+        $parameters['update'][] = $lead;
+
+        $response = $this->postRequest('/api/v2/leads', $parameters);
+
+        return empty($response['errors']);
+    }
+
+    /**
+     * Список сделок
+     *
+     * Метод для получения списка сделок с возможностью фильтрации и постраничной выборки.
+     * Ограничение по возвращаемым на одной странице (offset) данным - 500 сделок
+     *
+     * @link https://developers.amocrm.ru/rest_api/leads_list.php
+     * @param array $parameters Массив параметров к amoCRM API
+     * @param null|string $modified Дополнительная фильтрация по (изменено с)
+     * @return array Ответ amoCRM API
+     */
+    public function apiList($parameters, $modified = null)
+    {
+        $response = $this->getRequest('/private/api/v2/json/leads/list', $parameters, $modified);
+        return isset($response['leads']) ? $response['leads'] : [];
+    }
+    /**
+     * Добавление сделки
+     *
+     * Метод позволяет добавлять сделки по одной или пакетно
+     *
+     * @link https://developers.amocrm.ru/rest_api/leads_set.php
+     * @param array $leads Массив сделок для пакетного добавления
+     * @return int|array Уникальный идентификатор сделки или массив при пакетном добавлении
+     */
+    public function apiAdd($leads = [])
+    {
+        if (empty($leads)) {
+            $leads = [$this];
+        }
+        $parameters = [
+            'leads' => [
+                'add' => [],
+            ],
+        ];
+        foreach ($leads AS $lead) {
+            $parameters['leads']['add'][] = $lead->getValues();
+        }
+        $response = $this->postRequest('/private/api/v2/json/leads/set', $parameters);
+        if (isset($response['leads']['add'])) {
+            $result = array_map(function($item) {
+                return $item['id'];
+            }, $response['leads']['add']);
+        } else {
+            return [];
+        }
+        return count($leads) == 1 ? array_shift($result) : $result;
+    }
+    /**
+     * Обновление сделки
+     *
+     * Метод позволяет обновлять данные по уже существующим сделкам
+     *
+     * @link https://developers.amocrm.ru/rest_api/leads_set.php
+     * @param int $id Уникальный идентификатор сделки
+     * @param string $modified Дата последнего изменения данной сущности
+     * @return bool Флаг успешности выполнения запроса
+     * @throws \AmoCRM\Exception
+     */
+    public function apiUpdate($id, $modified = 'now')
+    {
+        $this->checkId($id);
         $parameters = [
             'leads' => [
                 'update' => [],
             ],
         ];
-
         $lead = $this->getValues();
         $lead['id'] = $id;
         $lead['last_modified'] = strtotime($modified);
-
         $parameters['leads']['update'][] = $lead;
-
-        $response = $this->postRequest('/api/v2/leads', $parameters);
-
+        $response = $this->postRequest('/private/api/v2/json/leads/set', $parameters);
         return empty($response['leads']['update']['errors']);
     }
 }

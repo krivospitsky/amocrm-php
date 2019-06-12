@@ -278,11 +278,12 @@ class Request
             } else {
                 throw new Exception('Invalid response body.', $code);
             }
-        } elseif (!isset($result['response'])) {
-            return false;
+        } elseif (isset($result['response'])){
+            return $result['response'];
+        } elseif (isset($result['_embedded']['items'])){
+            return $result['_embedded']['items'];
         }
-
-        return $result['response'];
+        return false;
     }
 
     /**
