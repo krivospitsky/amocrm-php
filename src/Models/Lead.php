@@ -52,6 +52,8 @@ class Lead extends AbstractModel
         'notes',
         'modified_user_id',
         'catalog_elements_id',
+        'sale',
+        'company_id',
     ];
 
     /**
