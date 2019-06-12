@@ -217,9 +217,13 @@ class Request
         curl_setopt($ch, CURLOPT_ENCODING, '');
 
         if ($this->parameters->hasPost()) {
-            $fields = json_encode([
-                'request' => $this->parameters->getPost(),
-            ]);
+            if (strpos($url, '/v2/')===false){
+                $fields = json_encode([
+                    'request' => $this->parameters->getPost(),
+                ]);
+            }else{
+                $fields = json_encode($this->parameters->getPost());                
+            }
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
             $this->printDebug('post params', $fields);
