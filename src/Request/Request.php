@@ -217,12 +217,12 @@ class Request
         curl_setopt($ch, CURLOPT_ENCODING, '');
 
         if ($this->parameters->hasPost()) {
-            if (strpos($url, '/v2/')===false){
+            if (strpos($url, '/private/')===false){
+                $fields = json_encode($this->parameters->getPost());                
+            }else{
                 $fields = json_encode([
                     'request' => $this->parameters->getPost(),
                 ]);
-            }else{
-                $fields = json_encode($this->parameters->getPost());                
             }
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
