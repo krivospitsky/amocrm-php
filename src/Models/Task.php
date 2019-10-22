@@ -154,4 +154,35 @@ class Task extends AbstractModel
 
         return empty($response['tasks']['update']['errors']);
     }
+
+// https://vatragro.amocrm.ru/ajax/v1/multiactions/set
+// Данные форм 
+// request[multiactions][add][0][entity_type]  4
+// request[multiactions][add][0][multiaction_type] 4
+// request[multiactions][add][0][data][data][ACTION]   DELETE
+// request[multiactions][add][0][ids][]    15268913 
+    public function ajaxDelete($ids){
+        $parameters = [
+            'request' => [
+                'multiactions' => [
+                    'add'=>[
+                        0=>[
+                            'entity_type'=>4,
+                            'multiaction_type'=>4,
+                            'data'=>[
+                                'data'=>[
+                                    'ACTION' => 'DELETE'
+                                ]
+                            ],
+                            'ids'=>$ids
+                        ]
+                    ]
+                ],
+            ],
+        ];
+
+        $response = $this->postRequest('/ajax/v1/multiactions/set', $parameters);
+        return empty($response['multiactions']['set']['errors']);
+    }
+
 }
