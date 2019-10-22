@@ -223,4 +223,27 @@ class Lead extends AbstractModel
         $response = $this->postRequest('/private/api/v2/json/leads/set', $parameters);
         return empty($response['leads']['update']['errors']);
     }
+
+     public function ajaxDelete($ids){
+        $parameters = [
+            'request' => [
+                'multiactions' => [
+                    'add'=>[
+                        0=>[
+                            'entity_type'=>2,
+                            'multiaction_type'=>4,
+                            'data'=>[
+                                'data'=>[
+                                    'ACTION' => 'DELETE'
+                                ]
+                            ],
+                            'ids'=>$ids
+                        ]
+                    ]
+                ],
+            ],
+        ];
+        $response = $this->postRequest('/ajax/v1/multiactions/set', $parameters);
+        return empty($response['multiactions']['set']['errors']);
+    }
 }
